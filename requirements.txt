@@ -3,3 +3,5 @@ PyMuPDF
 langdetect
 transformers
 sentence-transformers
+sentencepiece
+torch
