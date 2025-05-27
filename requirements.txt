@@ -1,0 +1,5 @@
+streamlit
+PyMuPDF
+langdetect
+transformers
+sentence-transformers
