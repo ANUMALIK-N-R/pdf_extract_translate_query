@@ -4,4 +4,4 @@ langdetect
 transformers
 sentence-transformers
 sentencepiece
-torch
+torch==2.0.1
