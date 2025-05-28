@@ -3,7 +3,7 @@ from nltk.tokenize import sent_tokenize
 from sentence_transformers import SentenceTransformer, util
 from utils.language_utils import translate_text, detect_language
 
-nltk.download('punkt')
+nltk.download('punkt_tab')
 
 chunks = []
 embeddings = None
