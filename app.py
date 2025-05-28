@@ -33,5 +33,6 @@ if uploaded_file is not None:
 
         query = st.text_input("Ask a question about the document:")
         if query:
-            answer = answer_question(query)
+            answer = answer_question(query, target_lang=target_lang)
             st.write(f"🤖 Answer: {answer}")
+
