@@ -7,13 +7,22 @@ st.set_page_config(page_title="Multilingual PDF Assistant", layout="wide")
 
 st.title("📄 Multilingual PDF Assistant")
 
-# Sidebar for upload and language input
 with st.sidebar:
     st.header("Upload & Settings")
     uploaded_file = st.file_uploader("Upload a PDF", type="pdf")
+
     target_lang = st.text_input("Translate to (e.g., en, fr, de):", "en")
 
-# Initialize session state for translated text and Q&A
+    qa_source = st.radio(
+        "Use text for Q&A from:",
+        options=["Original text", "Translated text"],
+        index=0,
+        help="Choose if the Q&A system should use the original extracted text or the translated text"
+    )
+
+# Session state for texts and Q&A status
+if "original_text" not in st.session_state:
+    st.session_state["original_text"] = None
 if "translated_text" not in st.session_state:
     st.session_state["translated_text"] = None
 if "qa_initialized" not in st.session_state:
@@ -25,36 +34,45 @@ else:
     with open("temp.pdf", "wb") as f:
         f.write(uploaded_file.read())
 
-    with st.spinner("Extracting text from PDF..."):
-        text = extract_text_from_pdf("temp.pdf")
+    if st.session_state["original_text"] is None:
+        with st.spinner("Extracting text from PDF..."):
+            st.session_state["original_text"] = extract_text_from_pdf("temp.pdf")
+        st.success("Text extracted!")
+
+    text = st.session_state["original_text"]
 
     if text:
         with st.expander("📋 Extracted Text Preview"):
             st.text_area("Extracted Text", text[:3000], height=300)
 
-        lang = detect_language(text)
-        st.markdown(f"🔍 **Detected Language:** {lang}")
+        detected_lang = detect_language(text)
+        st.markdown(f"🔍 **Detected Language:** {detected_lang}")
 
-        # Translate button (works anytime)
+        # Translate button
         if st.button("Translate"):
             with st.spinner(f"Translating to {target_lang}..."):
-                translated = translate_text(text, src_lang=lang, tgt_lang=target_lang)
+                translated = translate_text(text, src_lang=detected_lang, tgt_lang=target_lang)
                 st.session_state["translated_text"] = translated
             st.success("Translation complete!")
 
-        # Show translated text preview if available
+        # Show translated text if available
         if st.session_state["translated_text"]:
             with st.expander(f"🌐 Translated Text Preview ({target_lang})"):
                 st.text_area("Translated Text", st.session_state["translated_text"][:3000], height=300)
 
-        # Initialize Q&A system button
+        # Initialize Q&A system button uses selected text source
         if st.button("Initialize Q&A System"):
+            source_text = (
+                st.session_state["translated_text"]
+                if qa_source == "Translated text" and st.session_state["translated_text"] is not None
+                else st.session_state["original_text"]
+            )
             with st.spinner("Initializing Q&A system..."):
-                init_vector_store(text)
+                init_vector_store(source_text)
                 st.session_state["qa_initialized"] = True
-            st.success("Q&A system initialized! You can now ask questions below.")
+            st.success(f"Q&A system initialized on {qa_source.lower()}!")
 
-        # Question input and answer (only if Q&A initialized)
+        # Question input and answering only if Q&A initialized
         if st.session_state["qa_initialized"]:
             query = st.text_input("Ask a question about the document:")
             if query:
