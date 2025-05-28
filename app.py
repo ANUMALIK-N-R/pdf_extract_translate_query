@@ -75,10 +75,11 @@ else:
         # Question input and answering only if Q&A initialized
         if st.session_state["qa_initialized"]:
             query = st.text_input("Ask a question about the document:")
-            if query:
-                with st.spinner("Searching for answer..."):
-                    answer = answer_question(query, target_lang=target_lang)
-                st.markdown(f"🤖 **Answer:** {answer}")
+            query = st.text_input("Ask a question about the document:")
+        if query:
+            answer = answer_question(query, target_lang=target_lang, source_lang=lang)
+            st.write(f"🤖 Answer: {answer}")
+
 
     else:
         st.error("Failed to extract text from the PDF.")
