@@ -7,13 +7,18 @@ st.set_page_config(page_title="Multilingual PDF Assistant", layout="wide")
 
 st.title("📄 Multilingual PDF Assistant")
 
-# Sidebar for upload and language selection
+# Sidebar for upload and language input
 with st.sidebar:
     st.header("Upload & Settings")
     uploaded_file = st.file_uploader("Upload a PDF", type="pdf")
     target_lang = st.text_input("Translate to (e.g., en, fr, de):", "en")
 
-# Main page
+# Initialize session state for translated text and Q&A
+if "translated_text" not in st.session_state:
+    st.session_state["translated_text"] = None
+if "qa_initialized" not in st.session_state:
+    st.session_state["qa_initialized"] = False
+
 if uploaded_file is None:
     st.info("Please upload a PDF file from the sidebar to get started.")
 else:
@@ -30,23 +35,32 @@ else:
         lang = detect_language(text)
         st.markdown(f"🔍 **Detected Language:** {lang}")
 
-        # Button to initialize Q&A and translate text
-        if st.button("Initialize Q&A System"):
-            with st.spinner("Initializing Q&A system and translating text..."):
-                init_vector_store(text)
+        # Translate button (works anytime)
+        if st.button("Translate"):
+            with st.spinner(f"Translating to {target_lang}..."):
                 translated = translate_text(text, src_lang=lang, tgt_lang=target_lang)
-            st.success("Q&A system initialized!")
+                st.session_state["translated_text"] = translated
+            st.success("Translation complete!")
 
+        # Show translated text preview if available
+        if st.session_state["translated_text"]:
             with st.expander(f"🌐 Translated Text Preview ({target_lang})"):
-                st.text_area("Translated Text", translated[:3000], height=300)
+                st.text_area("Translated Text", st.session_state["translated_text"][:3000], height=300)
 
-            # Show question input and answer area only after initialization
+        # Initialize Q&A system button
+        if st.button("Initialize Q&A System"):
+            with st.spinner("Initializing Q&A system..."):
+                init_vector_store(text)
+                st.session_state["qa_initialized"] = True
+            st.success("Q&A system initialized! You can now ask questions below.")
+
+        # Question input and answer (only if Q&A initialized)
+        if st.session_state["qa_initialized"]:
             query = st.text_input("Ask a question about the document:")
             if query:
                 with st.spinner("Searching for answer..."):
                     answer = answer_question(query, target_lang=target_lang)
                 st.markdown(f"🤖 **Answer:** {answer}")
-        else:
-            st.info("Initialize the Q&A system to translate and ask questions.")
+
     else:
         st.error("Failed to extract text from the PDF.")
